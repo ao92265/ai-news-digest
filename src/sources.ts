@@ -30,6 +30,10 @@ export const sources: Source[] = [
   { name: 'Medium: Towards AI', kind: 'rss', url: 'https://medium.com/feed/towards-artificial-intelligence', category: 'blog', weight: 0.7 },
   { name: 'Medium: The Generator', kind: 'rss', url: 'https://medium.com/feed/the-generator', category: 'blog', weight: 0.7 },
 
+  // Joe Njenga (AI tools creator — was on Instagram request)
+  { name: 'Joe Njenga (Substack)', kind: 'rss', url: 'https://joenjenga.substack.com/feed', category: 'blog', weight: 1.2 },
+  { name: 'Joe Njenga (Medium)', kind: 'rss', url: 'https://medium.com/feed/@joe.njenga', category: 'blog', weight: 1.0 },
+
   // Community
   { name: 'Hacker News AI', kind: 'hn', category: 'community', weight: 1.2 },
 

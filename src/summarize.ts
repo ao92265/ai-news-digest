@@ -39,22 +39,36 @@ function parseSummary(text: string): Summary | null {
   }
 }
 
-async function summarizeOne(client: Anthropic, c: Cluster): Promise<Summary | null> {
+async function summarizeOne(client: Anthropic, c: Cluster, attempt = 1): Promise<Summary | null> {
   const ctx = c.items
     .slice(0, 3)
     .map(i => `[${i.source}] ${i.title}\n${i.summary || ''}`)
     .join('\n\n');
+  try {
+    return await callOnce(client, ctx);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/429|rate_limit/i.test(msg) && attempt < 4) {
+      const wait = 2000 * attempt + Math.random() * 500;
+      await new Promise(r => setTimeout(r, wait));
+      return summarizeOne(client, c, attempt + 1);
+    }
+    throw err;
+  }
+}
+
+async function callOnce(client: Anthropic, ctx: string): Promise<Summary | null> {
   const resp = await client.messages.create({
     model: MODEL,
-    max_tokens: 300,
+    max_tokens: 250,
     system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
     messages: [
       {
         role: 'user',
-        content: `Summarize this story. Return strict JSON with keys:
-- headline (short, specific, name the model/tool/capability)
-- summary (two sentences, concrete — what is the thing, what changed, any number / capability / price)
-- why_it_matters (one sentence — if adopt-worthy, what the reader should try or check; if not, start with the literal word "Skip" and briefly say why)
+        content: `Summarize this story as a one-line scannable digest entry. Return strict JSON with keys:
+- headline (short, specific, <= 80 chars, name the concrete thing: model, tool, repo)
+- summary (ONE short sentence, <= 140 chars, just what it is / what changed — no fluff, no "this is significant", no "users should know")
+- why_it_matters (one short sentence OR the literal word "Skip" followed by a short reason if not adopt-worthy)
 
 No markdown.
 
@@ -69,7 +83,9 @@ ${ctx}`,
 
 export async function summarizeAll(clusters: Cluster[]): Promise<Cluster[]> {
   const client = new Anthropic();
-  const batchSize = 5;
+  // Anthropic default free tier = 50 req/min. Batch of 4 per 5s ≈ 48/min.
+  const batchSize = 4;
+  const batchDelayMs = 5000;
   for (let i = 0; i < clusters.length; i += batchSize) {
     const batch = clusters.slice(i, i + batchSize);
     const results = await Promise.all(
@@ -82,6 +98,7 @@ export async function summarizeAll(clusters: Cluster[]): Promise<Cluster[]> {
       p.llmSummary = s.summary;
       p.llmWhy = s.why_it_matters;
     });
+    if (i + batchSize < clusters.length) await new Promise(r => setTimeout(r, batchDelayMs));
   }
   return clusters;
 }

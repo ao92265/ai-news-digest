@@ -15,7 +15,7 @@ import type { Item } from './types.js';
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const onlySource = args.find(a => a.startsWith('--source='))?.split('=')[1];
-const maxItems = Number(args.find(a => a.startsWith('--max='))?.split('=')[1] || 25);
+const maxItems = Number(args.find(a => a.startsWith('--max='))?.split('=')[1] || 35);
 const recencyHours = Number(args.find(a => a.startsWith('--hours='))?.split('=')[1] || 36);
 
 function recencyBoost(iso: string): number {
@@ -78,7 +78,7 @@ async function main(): Promise<void> {
       return c;
     })
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    .slice(0, Math.min(clusters.length, maxItems * 3));
+    .slice(0, Math.min(clusters.length, maxItems * 2));
 
   const hasKey = !!process.env.ANTHROPIC_API_KEY;
   if (!hasKey) console.warn('ANTHROPIC_API_KEY not set — skipping LLM summaries + TL;DR');
