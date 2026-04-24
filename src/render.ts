@@ -44,14 +44,17 @@ export function render(clusters: Cluster[], tldr: Tldr | null): { html: string; 
       const items = bySection.get(k)!
         .map(c => {
           const h = c.primary.llmHeadline || c.primary.title;
-          const s = c.primary.llmSummary || c.primary.summary || '';
+          const s = (c.primary.llmSummary || c.primary.summary || '').trim();
+          const body = s
+            ? `<div style="color:#222;font-size:14px;margin-top:6px;line-height:1.45">${esc(s)}</div>`
+            : '';
           const why = c.primary.llmWhy
             ? `<div style="color:#555;font-size:13px;margin-top:6px"><em>Why it matters:</em> ${esc(c.primary.llmWhy)}</div>`
             : '';
           const sources = uniq(c.items.map(i => i.source)).join(' · ');
           return `<li style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #f0f0f0">
             <a href="${esc(c.primary.url)}" style="color:#0b66c3;text-decoration:none;font-weight:600;font-size:15px">${esc(h)}</a>
-            <div style="color:#222;font-size:14px;margin-top:6px;line-height:1.45">${esc(s)}</div>
+            ${body}
             ${why}
             <div style="color:#888;font-size:12px;margin-top:6px">${esc(sources)}</div>
           </li>`;

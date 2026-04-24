@@ -11,6 +11,17 @@ export async function fetchRss(name: string, url: string, category: Category, we
       const link = (it.link || it.guid || '').trim();
       const title = (it.title || '').trim();
       if (!link || !title) return null;
+      // rss-parser maps fields inconsistently across RSS/Atom. Try every likely
+      // body field, then strip HTML. Atom feeds (e.g. Simon Willison) put body
+      // in `summary`; RSS in `contentSnippet`/`content`/`description`.
+      const anyIt = it as Record<string, unknown>;
+      const rawBody =
+        it.contentSnippet ||
+        it.content ||
+        (typeof anyIt.summary === 'string' ? (anyIt.summary as string) : '') ||
+        (typeof anyIt['content:encoded'] === 'string' ? (anyIt['content:encoded'] as string) : '') ||
+        (typeof anyIt.description === 'string' ? (anyIt.description as string) : '') ||
+        '';
       return {
         id: sha256(link),
         title,
@@ -18,7 +29,7 @@ export async function fetchRss(name: string, url: string, category: Category, we
         source: name,
         category,
         publishedAt: it.isoDate || it.pubDate || new Date().toISOString(),
-        summary: stripHtml(it.contentSnippet || it.content || ''),
+        summary: stripHtml(rawBody),
         weight,
       };
     })
