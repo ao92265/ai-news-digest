@@ -67,19 +67,92 @@ async function main(): Promise<void> {
   const clusters = cluster(fresh);
   console.log(`Clusters: ${clusters.length}`);
 
-  const ranked = clusters
+  // Cap source-count at 2 so one-source Claude Code releases can beat
+  // multi-outlet market stories. Over-fetch 3x for summarize so there are
+  // enough non-Skip candidates after the adopt-worthiness filter.
+  const preRanked = clusters
     .map(c => {
       const boost = recencyBoost(c.primary.publishedAt);
       const sourceCount = new Set(c.items.map(i => i.source)).size;
-      c.score = c.primary.weight * boost * Math.min(sourceCount, 4);
+      c.score = c.primary.weight * boost * Math.min(sourceCount, 2);
       return c;
     })
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    .slice(0, maxItems);
+    .slice(0, Math.min(clusters.length, maxItems * 3));
 
   const hasKey = !!process.env.ANTHROPIC_API_KEY;
   if (!hasKey) console.warn('ANTHROPIC_API_KEY not set — skipping LLM summaries + TL;DR');
-  const final = hasKey ? await summarizeAll(ranked) : ranked;
+  const summarized = hasKey ? await summarizeAll(preRanked) : preRanked;
+
+  // Drop items the LLM flagged as not adopt-worthy ("Skip ..." in why_it_matters).
+  // Without a key we can't judge adopt-worthiness, so keep everything.
+  const adoptWorthy = hasKey
+    ? summarized.filter(c => !/^skip\b/i.test((c.primary.llmWhy || '').trim()))
+    : summarized;
+  console.log(`Adopt-worthy: ${adoptWorthy.length}/${summarized.length}`);
+
+  // Post-summary merge: group by canonical company/product key so 7x DeepSeek
+  // stories collapse to one. Skip filter above already dropped non-adopt noise,
+  // so merging all "DeepSeek" items is safe — what remains is the single
+  // adopt-worthy release thread.
+  // Collapse aggressively by company/product family. The Skip filter above has
+  // already dropped non-adopt noise, so any remaining DeepSeek/OpenAI story is
+  // legitimately worth one representative mention.
+  const KEY_RX: Array<[RegExp, string]> = [
+    [/\bclaude code\b/i, 'claudecode'],
+    [/\b(mcp|model context protocol)\b/i, 'mcp'],
+    [/\bcursor(?: ai)?\b/i, 'cursor'],
+    [/\bgithub copilot\b|\bcopilot\b/i, 'copilot'],
+    [/\bcline\b/i, 'cline'],
+    [/\baider\b/i, 'aider'],
+    [/\b(gpt[- ]?\d|chatgpt|openai|\bcodex\b)\b/i, 'openai'],
+    [/\b(claude|anthropic)\b/i, 'anthropic'],
+    [/\bdeepseek\b/i, 'deepseek'],
+    [/\b(gemini|bard|google deepmind)\b/i, 'google'],
+    [/\b(llama|meta ai)\b/i, 'meta'],
+    [/\bmistral\b/i, 'mistral'],
+    [/\bqwen\b/i, 'qwen'],
+    [/\b(grok|xai)\b/i, 'xai'],
+    [/\bperplexity\b/i, 'perplexity'],
+    [/\b(huggingface|hugging face)\b/i, 'huggingface'],
+  ];
+  function matchKey(text: string): string | null {
+    for (const [rx, key] of KEY_RX) if (rx.test(text)) return key;
+    return null;
+  }
+  function modelKey(c: typeof summarized[number]): string | null {
+    // Key on headline first — headline names the subject. Fall back to title
+    // then summary. Avoids mis-keying DeepSeek stories that mention Claude
+    // competitively in the summary.
+    const head = c.primary.llmHeadline || '';
+    const title = c.primary.title || '';
+    const summary = c.primary.llmSummary || '';
+    return matchKey(head) ?? matchKey(title) ?? matchKey(summary);
+  }
+  const byKey = new Map<string, typeof adoptWorthy>();
+  const unkeyed: typeof adoptWorthy = [];
+  for (const c of adoptWorthy) {
+    const k = modelKey(c);
+    if (k) {
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k)!.push(c);
+    } else {
+      unkeyed.push(c);
+    }
+  }
+  const merged = [
+    ...Array.from(byKey.values()).map(arr => {
+      if (arr.length === 1) return arr[0];
+      arr.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      const head = arr[0];
+      const allItems = Array.from(new Map(arr.flatMap(c => c.items).map(it => [it.id, it])).values());
+      return { primary: head.primary, items: allItems, score: head.score };
+    }),
+    ...unkeyed,
+  ];
+
+  const final = merged.sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, maxItems);
+  console.log(`Merged duplicates: ${adoptWorthy.length} -> ${merged.length}; final: ${final.length}`);
   const tldr = hasKey ? await buildTldr(final).catch(err => { console.error('tldr error:', err?.message); return null; }) : null;
 
   const { html, text, subject } = render(final, tldr);

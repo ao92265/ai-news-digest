@@ -3,19 +3,21 @@ import type { Cluster } from './cluster.js';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 
-const SYSTEM_PROMPT = `You curate a daily AI/engineering news digest for a senior software engineer who uses Claude Code as a primary daily development tool.
+const SYSTEM_PROMPT = `You curate a daily "what did I miss that I need to adopt" digest for a senior software engineer who uses Claude Code as their primary dev tool.
 
-Priority signal (surface + summarize with detail):
-- Claude Code, Anthropic releases, MCP, tool-use, agent SDKs
-- LLM coding tools (Cursor, Copilot, Cline, Aider, Codex) and their capability changes
-- Code-generation research, agent engineering, evals
-- Developer infrastructure, IDE plugins, dev-time LLM tooling
+SUMMARIZE IN DETAIL only when the story is about:
+- A new LLM model, version, or capability the reader should try (GPT-5.5, Claude Opus/Sonnet, Gemini, Llama, DeepSeek, etc.)
+- A new or updated coding agent / IDE tool (Claude Code, Cursor, Copilot, Cline, Aider, Codex) — features, pricing changes, usage limits
+- A new MCP server, agent framework, or dev-time LLM library
+- A research result that changes how to build agents / prompt / fine-tune (new benchmark, eval, technique)
+- A GitHub repo or SDK release worth installing/trying
 
-Lower priority (summarize briefly or deprioritize):
-- General AI business news, fundraising, corporate deals
+DEMOTE (start why_it_matters with the literal word "Skip") when the story is about:
+- Business/fundraising news, stock movements, earnings, deals, acquisitions
+- Policy, regulation, geopolitics, lawsuits, industrial-scale AI theft
 - Consumer AI products unrelated to dev work
-- Policy/regulation unless directly engineering-impactful
-- Generic "AI will change X" think-pieces
+- Opinion pieces, think-pieces, hype, "AI will change X" commentary
+- Celebrity or human-interest AI stories
 
 Be concise and concrete. Never invent facts. Output strict JSON only — no markdown, no prose outside JSON.`;
 
@@ -49,7 +51,14 @@ async function summarizeOne(client: Anthropic, c: Cluster): Promise<Summary | nu
     messages: [
       {
         role: 'user',
-        content: `Summarize this story for the engineer described in the system prompt. Return strict JSON with keys: headline (short, specific, no clickbait), summary (two sentences focused on what changed and the concrete capability/fact), why_it_matters (one sentence — what a Claude Code user should do or note, e.g. "new MCP server worth trying", "paper relevant to agent design", or "skip unless you care about X"). Do not wrap in markdown.\n\n${ctx}`,
+        content: `Summarize this story. Return strict JSON with keys:
+- headline (short, specific, name the model/tool/capability)
+- summary (two sentences, concrete — what is the thing, what changed, any number / capability / price)
+- why_it_matters (one sentence — if adopt-worthy, what the reader should try or check; if not, start with the literal word "Skip" and briefly say why)
+
+No markdown.
+
+${ctx}`,
       },
     ],
   });
