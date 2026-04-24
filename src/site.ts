@@ -266,11 +266,11 @@ const ABOUT_BODY = `<h1 class="page-title">About</h1>
 <section class="digest-section">
   <h2 class="section"><span class="name">How it works</span><span class="rule"></span></h2>
   <ol class="howitworks">
-    <li><b>07:00 UTC</b> — a GitHub Action kicks off the daily build.</li>
-    <li><b>Fetch</b> ~24 sources across releases, Hacker News, blogs, newsletters, research, and video.</li>
-    <li><b>Summarize</b> — Claude Haiku writes a one-line summary for each story, flags adopt-worthy items, and drafts the TL;DR.</li>
-    <li><b>Merge</b> — duplicates across outlets collapse into a single entry with combined sources.</li>
-    <li><b>Publish</b> — static site rebuilds and deploys to GitHub Pages. Email goes out to the list.</li>
+    <li><span><b>07:00 UTC</b> — a GitHub Action kicks off the daily build.</span></li>
+    <li><span><b>Fetch</b> ~24 sources across releases, Hacker News, blogs, newsletters, research, and video.</span></li>
+    <li><span><b>Summarize</b> — Claude Haiku writes a one-line summary for each story, flags adopt-worthy items, and drafts the TL;DR.</span></li>
+    <li><span><b>Merge</b> — duplicates across outlets collapse into a single entry with combined sources.</span></li>
+    <li><span><b>Publish</b> — static site rebuilds and deploys to GitHub Pages. Email goes out to the list.</span></li>
   </ol>
 </section>
 <section class="digest-section">
