@@ -6,3 +6,9 @@ out
 .DS_Store
 
 .omc/
+
+# Site shell is regenerated each run — only archive copies + index are persisted
+site/index.html
+site/about.html
+site/archive.html
+site/styles.css

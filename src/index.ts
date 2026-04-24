@@ -10,6 +10,7 @@ import { summarizeAll } from './summarize.js';
 import { buildTldr } from './tldr.js';
 import { render } from './render.js';
 import { sendDigest } from './send.js';
+import { writeSite } from './site.js';
 import type { Item } from './types.js';
 
 const args = process.argv.slice(2);
@@ -156,6 +157,9 @@ async function main(): Promise<void> {
   const tldr = hasKey ? await buildTldr(final).catch(err => { console.error('tldr error:', err?.message); return null; }) : null;
 
   const { html, text, subject } = render(final, tldr);
+
+  // Always write the static site (powers GitHub Pages)
+  await writeSite(final, tldr);
 
   if (dryRun) {
     await fs.mkdir('./out', { recursive: true });
