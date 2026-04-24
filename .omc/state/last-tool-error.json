@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git init -q -b main && git add -A && git -c user.email=aoreilly@harriscomputer.com -c user.name=\\\"Adam O'Reilly\\\" commit -q -m \\\"$(cat <<'EOF'\\nfeat: initial ai-news-digest scaffold\\n\\nSou...",
-  "error": "Exit code 1\nError: File README.md contains LF line endings. Please convert to CRLF.",
-  "timestamp": "2026-04-24T09:24:39.395Z",
-  "retry_count": 1
-}
