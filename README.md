@@ -25,8 +25,8 @@ npm run digest            # sends email (requires env vars)
 Env vars required to send:
 
 - `ANTHROPIC_API_KEY` — Claude Haiku for summaries (optional; dry-run works without it)
-- `RESEND_API_KEY` — email send
-- `DIGEST_TO_EMAIL`, `DIGEST_FROM_EMAIL` — recipient + Resend-verified sender
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` — SMTP server creds
+- `DIGEST_TO_EMAIL`, `DIGEST_FROM_EMAIL` — recipient + sender
 - `GITHUB_TOKEN` (optional) — raises GitHub search API rate limit
 
 ## GitHub Actions
