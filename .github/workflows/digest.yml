@@ -1,0 +1,57 @@
+name: digest
+
+on:
+  schedule:
+    # 07:00 UTC daily. For 07:00 Europe/Dublin in summer (BST), change to '0 6 * * *'.
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (build digest, do not send)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build and send digest
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npm run dry-run
+          else
+            npm run digest
+          fi
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          DIGEST_TO_EMAIL: ${{ secrets.DIGEST_TO_EMAIL }}
+          DIGEST_FROM_EMAIL: ${{ secrets.DIGEST_FROM_EMAIL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload dry-run artifact
+        if: ${{ inputs.dry_run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-preview
+          path: out/
+
+      - name: Commit updated seen.json
+        if: ${{ inputs.dry_run != 'true' }}
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: update seen.json'
+          file_pattern: 'data/seen.json'
