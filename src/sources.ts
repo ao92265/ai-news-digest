@@ -13,10 +13,22 @@ export const sources: Source[] = [
   { name: 'Claude Code Releases', kind: 'rss', url: 'https://github.com/anthropics/claude-code/releases.atom', category: 'code', weight: 2.0 },
   { name: 'Anthropic Cookbook', kind: 'rss', url: 'https://github.com/anthropics/anthropic-cookbook/commits/main.atom', category: 'code', weight: 1.3 },
 
-  // High-signal dev blogs
+  // Official AI lab feeds
+  { name: 'OpenAI News', kind: 'rss', url: 'https://openai.com/news/rss.xml', category: 'news', weight: 1.4 },
+  { name: 'Google DeepMind', kind: 'rss', url: 'https://www.deepmind.com/blog/rss.xml', category: 'news', weight: 1.2 },
+  { name: 'Hugging Face Blog', kind: 'rss', url: 'https://huggingface.co/blog/feed.xml', category: 'blog', weight: 1.2 },
+
+  // High-signal dev blogs / newsletters
   { name: 'Simon Willison', kind: 'rss', url: 'https://simonwillison.net/atom/everything/', category: 'blog', weight: 1.5 },
   { name: 'Latent Space', kind: 'rss', url: 'https://www.latent.space/feed', category: 'blog', weight: 1.3 },
+  { name: 'Import AI (Jack Clark)', kind: 'rss', url: 'https://jack-clark.net/feed/', category: 'blog', weight: 1.3 },
+  { name: 'The Gradient', kind: 'rss', url: 'https://thegradient.pub/rss/', category: 'blog', weight: 1.1 },
   { name: 'GitHub Engineering', kind: 'rss', url: 'https://github.blog/engineering/feed/', category: 'blog', weight: 1.1 },
+
+  // Medium AI-focused publications (mixed quality — Skip filter drops noise)
+  { name: 'Medium: Towards Data Science', kind: 'rss', url: 'https://medium.com/feed/towards-data-science', category: 'blog', weight: 0.7 },
+  { name: 'Medium: Towards AI', kind: 'rss', url: 'https://medium.com/feed/towards-artificial-intelligence', category: 'blog', weight: 0.7 },
+  { name: 'Medium: The Generator', kind: 'rss', url: 'https://medium.com/feed/the-generator', category: 'blog', weight: 0.7 },
 
   // Community
   { name: 'Hacker News AI', kind: 'hn', category: 'community', weight: 1.2 },
