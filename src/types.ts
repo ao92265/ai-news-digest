@@ -13,4 +13,5 @@ export type Item = {
   llmSummary?: string;
   llmWhy?: string;
   score?: number;
+  adopt?: boolean;
 };

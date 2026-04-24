@@ -90,6 +90,8 @@ async function main(): Promise<void> {
   const adoptWorthy = hasKey
     ? summarized.filter(c => !/^skip\b/i.test((c.primary.llmWhy || '').trim()))
     : summarized;
+  // Flag survivors so the site renderer can style them with the Adopt badge.
+  for (const c of adoptWorthy) c.primary.adopt = true;
   console.log(`Adopt-worthy: ${adoptWorthy.length}/${summarized.length}`);
 
   // Post-summary merge: group by canonical company/product key so 7x DeepSeek
