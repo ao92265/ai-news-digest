@@ -7,6 +7,7 @@ import { fetchGithubTrending } from './fetchers/github.js';
 import { loadSeen, saveSeen } from './dedupe.js';
 import { cluster } from './cluster.js';
 import { summarizeAll } from './summarize.js';
+import { buildTldr } from './tldr.js';
 import { render } from './render.js';
 import { sendDigest } from './send.js';
 import type { Item } from './types.js';
@@ -77,16 +78,17 @@ async function main(): Promise<void> {
     .slice(0, maxItems);
 
   const hasKey = !!process.env.ANTHROPIC_API_KEY;
-  if (!hasKey) console.warn('ANTHROPIC_API_KEY not set — skipping LLM summaries');
+  if (!hasKey) console.warn('ANTHROPIC_API_KEY not set — skipping LLM summaries + TL;DR');
   const final = hasKey ? await summarizeAll(ranked) : ranked;
+  const tldr = hasKey ? await buildTldr(final).catch(err => { console.error('tldr error:', err?.message); return null; }) : null;
 
-  const { html, text, subject } = render(final);
+  const { html, text, subject } = render(final, tldr);
 
   if (dryRun) {
     await fs.mkdir('./out', { recursive: true });
     await fs.writeFile('./out/digest.html', html);
     await fs.writeFile('./out/digest.txt', text);
-    await fs.writeFile('./out/debug.json', JSON.stringify(final, null, 2));
+    await fs.writeFile('./out/debug.json', JSON.stringify({ tldr, clusters: final }, null, 2));
     console.log(`\nDry-run output: ./out/digest.html (${final.length} stories)`);
     console.log(`Subject would be: "${subject}"`);
   } else {

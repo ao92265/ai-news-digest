@@ -2,8 +2,22 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { Cluster } from './cluster.js';
 
 const MODEL = 'claude-haiku-4-5-20251001';
-const SYSTEM_PROMPT =
-  'You summarize AI/tech news for a daily digest aimed at an AI practitioner and tech leader. Be concise and concrete. Never invent facts. Output strict JSON only.';
+
+const SYSTEM_PROMPT = `You curate a daily AI/engineering news digest for a senior software engineer who uses Claude Code as a primary daily development tool.
+
+Priority signal (surface + summarize with detail):
+- Claude Code, Anthropic releases, MCP, tool-use, agent SDKs
+- LLM coding tools (Cursor, Copilot, Cline, Aider, Codex) and their capability changes
+- Code-generation research, agent engineering, evals
+- Developer infrastructure, IDE plugins, dev-time LLM tooling
+
+Lower priority (summarize briefly or deprioritize):
+- General AI business news, fundraising, corporate deals
+- Consumer AI products unrelated to dev work
+- Policy/regulation unless directly engineering-impactful
+- Generic "AI will change X" think-pieces
+
+Be concise and concrete. Never invent facts. Output strict JSON only — no markdown, no prose outside JSON.`;
 
 type Summary = { headline: string; summary: string; why_it_matters: string };
 
@@ -35,7 +49,7 @@ async function summarizeOne(client: Anthropic, c: Cluster): Promise<Summary | nu
     messages: [
       {
         role: 'user',
-        content: `Summarize this story for an AI practitioner. Return strict JSON with keys: headline (short, punchy, no clickbait), summary (two sentences), why_it_matters (one sentence). Do not wrap in markdown.\n\n${ctx}`,
+        content: `Summarize this story for the engineer described in the system prompt. Return strict JSON with keys: headline (short, specific, no clickbait), summary (two sentences focused on what changed and the concrete capability/fact), why_it_matters (one sentence — what a Claude Code user should do or note, e.g. "new MCP server worth trying", "paper relevant to agent design", or "skip unless you care about X"). Do not wrap in markdown.\n\n${ctx}`,
       },
     ],
   });
