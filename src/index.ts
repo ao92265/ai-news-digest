@@ -1,9 +1,10 @@
 import fs from 'node:fs/promises';
-import { sources } from './sources.js';
+import { sources as rawSources } from './sources.js';
 import { fetchRss } from './fetchers/rss.js';
 import { fetchHn } from './fetchers/hn.js';
 import { fetchArxiv } from './fetchers/arxiv.js';
 import { fetchGithubTrending } from './fetchers/github.js';
+import { fetchReddit } from './fetchers/reddit.js';
 import { loadSeen, saveSeen } from './dedupe.js';
 import { cluster } from './cluster.js';
 import { summarizeAll } from './summarize.js';
@@ -11,6 +12,7 @@ import { buildTldr } from './tldr.js';
 import { render } from './render.js';
 import { sendDigest } from './send.js';
 import { writeSite } from './site.js';
+import { applySourceTuning, recordRun, updateTrends, getTrendingTopics, trendingBoost, crossCategoryBoost } from './learn.js';
 import type { Item } from './types.js';
 
 const args = process.argv.slice(2);
@@ -24,7 +26,7 @@ function recencyBoost(iso: string): number {
   return Math.max(0.3, 1 - h / 72);
 }
 
-async function fetchAll(): Promise<Item[]> {
+async function fetchAll(sources: typeof rawSources): Promise<Item[]> {
   const jobs = sources.map(async src => {
     if (onlySource && src.name !== onlySource && src.kind !== onlySource) return [];
     switch (src.kind) {
@@ -32,6 +34,7 @@ async function fetchAll(): Promise<Item[]> {
       case 'hn': return fetchHn(src.weight);
       case 'arxiv': return fetchArxiv(src.weight);
       case 'github-trending': return fetchGithubTrending(src.topics, src.weight);
+      case 'reddit': return fetchReddit(src.subs, src.minScore, src.weight);
     }
   });
   const results = await Promise.allSettled(jobs);
@@ -58,9 +61,15 @@ async function main(): Promise<void> {
   const seen = await loadSeen();
   console.log(`Seen store: ${seen.size} ids`);
 
+  const tunedSources = await applySourceTuning(rawSources);
+
   console.log('Fetching sources...');
-  const all = await fetchAll();
+  const all = await fetchAll(tunedSources);
   console.log(`Total fetched: ${all.length}`);
+
+  const trends = await updateTrends(all);
+  const trending = getTrendingTopics(trends);
+  if (trending.size) console.log(`Trending topics (${trending.size}): ${Array.from(trending).slice(0, 8).join(', ')}`);
 
   const fresh = all.filter(i => !seen.has(i.id) && isRecent(i.publishedAt));
   console.log(`Fresh in last ${recencyHours}h: ${fresh.length}`);
@@ -68,14 +77,17 @@ async function main(): Promise<void> {
   const clusters = cluster(fresh);
   console.log(`Clusters: ${clusters.length}`);
 
-  // Cap source-count at 2 so one-source Claude Code releases can beat
-  // multi-outlet market stories. Over-fetch 3x for summarize so there are
-  // enough non-Skip candidates after the adopt-worthiness filter.
+  // Score = source weight × recency × source-count cap × trending-topic boost × cross-category boost.
+  // Cap source-count at 2 so single-source Claude Code releases can beat multi-outlet market stories.
+  // Cross-category boost rewards true corroboration (community + blog + repo) over press-echo (3 news outlets).
   const preRanked = clusters
     .map(c => {
       const boost = recencyBoost(c.primary.publishedAt);
       const sourceCount = new Set(c.items.map(i => i.source)).size;
-      c.score = c.primary.weight * boost * Math.min(sourceCount, 2);
+      const trend = trendingBoost(c.primary.title, trending);
+      const xcat = crossCategoryBoost(c.items);
+      c.score = c.primary.weight * boost * Math.min(sourceCount, 2) * trend * xcat;
+      if (trend > 1.0) c.primary.trending = true;
       return c;
     })
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
@@ -93,6 +105,9 @@ async function main(): Promise<void> {
   // Flag survivors so the site renderer can style them with the Adopt badge.
   for (const c of adoptWorthy) c.primary.adopt = true;
   console.log(`Adopt-worthy: ${adoptWorthy.length}/${summarized.length}`);
+
+  // Record per-source kept/skipped to drive auto-tuning on next run.
+  if (hasKey) await recordRun(summarized);
 
   // Post-summary merge: group by canonical company/product key so 7x DeepSeek
   // stories collapse to one. Skip filter above already dropped non-adopt noise,

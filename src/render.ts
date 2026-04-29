@@ -70,6 +70,9 @@ function itemHtml(c: Cluster, sectionLabel: string): string {
   const badge = adopt
     ? `<span style="display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:0.1em;padding:2px 7px;border-radius:3px;background:${C.accent};color:#ffffff;text-transform:uppercase;margin-right:8px;vertical-align:middle">Adopt</span>`
     : '';
+  const trendBadge = c.primary.trending
+    ? `<span style="display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:0.1em;padding:2px 7px;border-radius:3px;background:${C.ink};color:#ffffff;text-transform:uppercase;margin-right:8px;vertical-align:middle">Trending</span>`
+    : '';
   const sourceChips = sources.map(s =>
     `<span style="display:inline-block;padding:1px 7px;background:${C.soft};border-radius:3px;margin-right:4px;color:${C.muted};font-size:10.5px">${esc(s)}</span>`
   ).join('');
@@ -79,7 +82,7 @@ function itemHtml(c: Cluster, sectionLabel: string): string {
     <div style="background:${C.card};border:1px solid ${borderColour};border-radius:8px;padding:14px 16px;position:relative">
       ${accentBar}
       <div style="margin-bottom:6px">
-        ${badge}<a href="${esc(c.primary.url)}" style="color:${C.ink};text-decoration:none;font-weight:600;font-size:14.5px;line-height:1.35;letter-spacing:-0.005em">${esc(headline)}</a>
+        ${badge}${trendBadge}<a href="${esc(c.primary.url)}" style="color:${C.ink};text-decoration:none;font-weight:600;font-size:14.5px;line-height:1.35;letter-spacing:-0.005em">${esc(headline)}</a>
       </div>
       ${summary ? `<div style="font-size:12.5px;color:${C.muted};line-height:1.5;margin-top:4px">${esc(summary)}</div>` : ''}
       <div style="margin-top:10px;font-size:10.5px;color:${C.muted}">${sourceChips}</div>

@@ -144,6 +144,7 @@ function digestBodyHtml(
           return `<li class="item ${adopt ? 'adopt' : ''}" data-id="${esc(id)}" data-sources="${esc(sources.join('|'))}">
             <div class="item-head">
               ${adopt ? '<span class="badge">Adopt</span>' : ''}
+              ${c.primary.trending ? '<span class="badge trending">Trending</span>' : ''}
               <span class="item-title"><a href="${esc(c.primary.url)}" target="_blank" rel="noopener">${esc(headline)}</a></span>
             </div>
             ${summary ? `<div class="item-summary">${esc(summary)}</div>` : ''}

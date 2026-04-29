@@ -14,4 +14,5 @@ export type Item = {
   llmWhy?: string;
   score?: number;
   adopt?: boolean;
+  trending?: boolean;
 };
