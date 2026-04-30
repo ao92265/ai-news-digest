@@ -169,7 +169,30 @@ async function main(): Promise<void> {
     ...unkeyed,
   ];
 
-  const final = merged.sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, maxItems);
+  // Diversity cap: no single source dominates the final list. dev.to / Medium /
+  // HN can flood top-N otherwise — cap each at PER_SOURCE_CAP and let lower-
+  // ranked items from underrepresented sources bubble up.
+  const PER_SOURCE_CAP = 5;
+  const ranked = merged.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  const perSource = new Map<string, number>();
+  const final: typeof merged = [];
+  const overflow: typeof merged = [];
+  for (const c of ranked) {
+    const src = c.primary.source;
+    const used = perSource.get(src) ?? 0;
+    if (used < PER_SOURCE_CAP) {
+      final.push(c);
+      perSource.set(src, used + 1);
+    } else {
+      overflow.push(c);
+    }
+    if (final.length >= maxItems) break;
+  }
+  // If diversity cap leaves room (rare), refill from overflow keeping rank order.
+  for (const c of overflow) {
+    if (final.length >= maxItems) break;
+    final.push(c);
+  }
   console.log(`Merged duplicates: ${adoptWorthy.length} -> ${merged.length}; final: ${final.length}`);
   const tldr = hasKey ? await buildTldr(final).catch(err => { console.error('tldr error:', err?.message); return null; }) : null;
 

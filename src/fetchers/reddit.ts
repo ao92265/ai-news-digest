@@ -1,40 +1,53 @@
+import Parser from 'rss-parser';
 import { sha256, stripHtml } from '../hash.js';
 import type { Item } from '../types.js';
 
-type RedditPost = {
-  data: {
-    id: string;
-    title: string;
-    selftext?: string;
-    url?: string;
-    permalink: string;
-    score: number;
-    num_comments: number;
-    created_utc: number;
-    over_18?: boolean;
-    stickied?: boolean;
-    is_self?: boolean;
-  };
-};
+// RSSHub public instance — proxies Reddit RSS without IP-blocked datacenter
+// requests hitting Reddit directly. Returns standard RSS XML.
+const RSSHUB_BASE = process.env.RSSHUB_BASE || 'https://rsshub.app';
 
-type RedditListing = {
-  data: { children: RedditPost[] };
-};
+const parser = new Parser({
+  timeout: 20000,
+  headers: { 'User-Agent': 'ai-news-digest/0.1 (+github.com/aoreilly)' },
+});
 
-async function fetchSub(sub: string, minScore: number, attempt = 1): Promise<RedditPost[]> {
-  const url = `https://www.reddit.com/r/${sub}/top.json?t=day&limit=30`;
+const SCORE_RX = /(\d+)\s*(?:points?|↑|score)/i;
+
+async function fetchSub(sub: string, minScore: number, attempt = 1): Promise<Item[]> {
+  const url = `${RSSHUB_BASE}/reddit/subreddit/${sub}/hot`;
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'ai-news-digest/0.1 (by /u/aoreilly)' },
-    });
-    if (!res.ok) throw new Error(`Reddit r/${sub} ${res.status}`);
-    const data = (await res.json()) as RedditListing;
-    return (data.data?.children || []).filter(
-      p => !p.data.stickied && !p.data.over_18 && p.data.score >= minScore,
-    );
+    const feed = await parser.parseURL(url);
+    return (feed.items || [])
+      .map((it): Item | null => {
+        const link = (it.link || it.guid || '').trim();
+        const title = (it.title || '').trim();
+        if (!link || !title) return null;
+        const anyIt = it as Record<string, unknown>;
+        const rawBody =
+          it.contentSnippet ||
+          it.content ||
+          (typeof anyIt.description === 'string' ? (anyIt.description as string) : '') ||
+          '';
+        const body = stripHtml(rawBody);
+        // RSSHub embeds score in description; if absent keep item (best effort).
+        const m = body.match(SCORE_RX);
+        const score = m ? parseInt(m[1], 10) : Infinity;
+        if (score < minScore) return null;
+        return {
+          id: sha256(link),
+          title,
+          url: link,
+          source: `r/${sub}`,
+          category: 'community',
+          publishedAt: it.isoDate || it.pubDate || new Date().toISOString(),
+          summary: body.slice(0, 400),
+          weight: 1.0,
+        };
+      })
+      .filter((i): i is Item => i !== null);
   } catch (err) {
     if (attempt < 3) {
-      await new Promise(r => setTimeout(r, 800 * attempt));
+      await new Promise(r => setTimeout(r, 1000 * attempt));
       return fetchSub(sub, minScore, attempt + 1);
     }
     throw err;
@@ -50,23 +63,7 @@ export async function fetchReddit(subs: string[], minScore: number, weight: numb
       console.error(`  Reddit r/${sub} failed: ${r.reason?.message || r.reason}`);
       return;
     }
-    for (const post of r.value) {
-      const d = post.data;
-      const link = d.is_self || !d.url ? `https://www.reddit.com${d.permalink}` : d.url;
-      const title = d.title.trim();
-      if (!link || !title) continue;
-      const body = stripHtml(d.selftext || '').slice(0, 400);
-      items.push({
-        id: sha256(link),
-        title,
-        url: link,
-        source: `r/${sub}`,
-        category: 'community',
-        publishedAt: new Date(d.created_utc * 1000).toISOString(),
-        summary: body ? `${d.score}↑ ${d.num_comments}💬 — ${body}` : `${d.score}↑ ${d.num_comments}💬`,
-        weight,
-      });
-    }
+    for (const it of r.value) items.push({ ...it, weight });
   });
   return items;
 }

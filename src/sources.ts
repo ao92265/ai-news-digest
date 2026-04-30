@@ -30,21 +30,26 @@ export const sources: Source[] = [
   { name: 'KDnuggets', kind: 'rss', url: 'https://www.kdnuggets.com/feed', category: 'blog', weight: 1.1 },
 
   // Medium AI-focused publications (mixed quality — Skip filter drops noise)
-  { name: 'Medium: Towards Data Science', kind: 'rss', url: 'https://medium.com/feed/towards-data-science', category: 'blog', weight: 1.1 },
-  { name: 'Medium: Towards AI', kind: 'rss', url: 'https://medium.com/feed/towards-artificial-intelligence', category: 'blog', weight: 1.1 },
-  { name: 'Medium: The Generator', kind: 'rss', url: 'https://medium.com/feed/the-generator', category: 'blog', weight: 1.1 },
+  { name: 'Medium: Towards Data Science', kind: 'rss', url: 'https://medium.com/feed/towards-data-science', category: 'blog', weight: 1.3 },
+  { name: 'Medium: Towards AI', kind: 'rss', url: 'https://medium.com/feed/towards-artificial-intelligence', category: 'blog', weight: 1.3 },
+  { name: 'Medium: The Generator', kind: 'rss', url: 'https://medium.com/feed/the-generator', category: 'blog', weight: 1.3 },
 
   // Joe Njenga (AI tools creator — was on Instagram request)
   { name: 'Joe Njenga (Substack)', kind: 'rss', url: 'https://joenjenga.substack.com/feed', category: 'blog', weight: 1.2 },
   { name: 'Joe Njenga (Medium)', kind: 'rss', url: 'https://medium.com/feed/@joe.njenga', category: 'blog', weight: 1.0 },
 
-  // Community — Reddit (practical tips, workflows, prompts, real-world usage)
-  { name: 'Reddit: Claude / Coding', kind: 'reddit', subs: ['ClaudeAI', 'ChatGPTCoding', 'cursor'], minScore: 50, category: 'community', weight: 1.6 },
-  { name: 'Reddit: Local + ML', kind: 'reddit', subs: ['LocalLLaMA', 'MachineLearning'], minScore: 80, category: 'community', weight: 1.4 },
-  { name: 'Reddit: AI general', kind: 'reddit', subs: ['singularity', 'artificial', 'OpenAI'], minScore: 200, category: 'community', weight: 1.1 },
+  // Community — Reddit disabled: 403 from datacenter IPs (GitHub Actions) and
+  // public RSSHub instances. Re-enable when OAuth credentials available.
+  // { name: 'Reddit: Claude / Coding', kind: 'reddit', subs: ['ClaudeAI', 'ChatGPTCoding', 'cursor'], minScore: 50, category: 'community', weight: 1.6 },
+  // { name: 'Reddit: Local + ML', kind: 'reddit', subs: ['LocalLLaMA', 'MachineLearning'], minScore: 80, category: 'community', weight: 1.4 },
+  // { name: 'Reddit: AI general', kind: 'reddit', subs: ['singularity', 'artificial', 'OpenAI'], minScore: 200, category: 'community', weight: 1.3 },
 
-  // Community — HN
-  { name: 'Hacker News AI', kind: 'hn', category: 'community', weight: 1.3 },
+  // Community — HN + scrape-friendly alternatives
+  { name: 'Hacker News AI', kind: 'hn', category: 'community', weight: 1.6 },
+  { name: 'Lobsters AI', kind: 'rss', url: 'https://lobste.rs/t/ai.rss', category: 'community', weight: 1.3 },
+  { name: 'dev.to AI', kind: 'rss', url: 'https://dev.to/feed/tag/ai', category: 'community', weight: 1.3 },
+  { name: 'dev.to LLM', kind: 'rss', url: 'https://dev.to/feed/tag/llm', category: 'community', weight: 1.3 },
+  { name: 'dev.to Claude', kind: 'rss', url: 'https://dev.to/feed/tag/claude', category: 'community', weight: 1.3 },
 
   // Code / repos
   { name: 'GitHub Trending AI', kind: 'github-trending', topics: ['llm', 'agents', 'artificial-intelligence', 'mcp'], category: 'code', weight: 1.1 },
@@ -56,11 +61,11 @@ export const sources: Source[] = [
   // Tech-press AI — kept for context, low weight so market/policy doesn't dominate
   { name: 'TechCrunch AI', kind: 'rss', url: 'https://techcrunch.com/category/artificial-intelligence/feed/', category: 'news', weight: 0.6 },
   { name: 'The Verge AI', kind: 'rss', url: 'https://www.theverge.com/rss/ai-artificial-intelligence/index.xml', category: 'news', weight: 0.6 },
-  { name: 'Ars Technica AI', kind: 'rss', url: 'https://arstechnica.com/ai/feed/', category: 'news', weight: 1.1 },
+  { name: 'Ars Technica AI', kind: 'rss', url: 'https://arstechnica.com/ai/feed/', category: 'news', weight: 0.7 },
   { name: 'MIT Tech Review AI', kind: 'rss', url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed', category: 'news', weight: 0.6 },
 
   // Research / video
   { name: 'arXiv cs.AI', kind: 'arxiv', category: 'research', weight: 0.6 },
   { name: 'Two Minute Papers', kind: 'rss', url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCbfYPyITQ-7l4upoX8nvctg', category: 'video', weight: 0.5 },
-  { name: 'AI Explained', kind: 'rss', url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCNJ1Ymd5yFuUPtn21xtRbbw', category: 'video', weight: 1.1 },
+  { name: 'AI Explained', kind: 'rss', url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCNJ1Ymd5yFuUPtn21xtRbbw', category: 'video', weight: 0.7 },
 ];

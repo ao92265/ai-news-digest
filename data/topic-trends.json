@@ -4,85 +4,85 @@
   ],
   "topics": {
     "openai": [
-      269
+      266
     ],
     "models": [
-      162
+      166
     ],
     "face": [
-      154
+      155
     ],
     "hugging face": [
-      152
+      153
     ],
     "hugging": [
-      152
+      153
     ],
     "chatgpt": [
-      113
+      111
     ],
     "model": [
-      113
+      115
     ],
     "learning": [
-      85
+      86
     ],
     "data": [
-      82
+      85
     ],
     "language": [
-      79
+      82
     ],
     "gpt-5": [
-      77
+      76
     ],
     "claude": [
-      74
+      65
     ],
     "transformers": [
-      73
+      74
     ],
     "deepseek": [
-      72
+      70
     ],
     "agents": [
-      71
+      69
     ],
     "open": [
-      68
+      70
     ],
     "agent": [
       67
     ],
     "code": [
-      61
+      68
     ],
     "inference": [
-      49
+      50
     ],
     "llms": [
-      48
+      50
     ],
     "generation": [
-      48
+      49
     ],
     "language models": [
-      47
+      48
     ],
     "training": [
-      46
+      44
     ],
     "llm": [
-      45
+      44
     ],
     "gemini": [
-      44
+      42
     ],
     "research": [
       41
     ],
     "codex": [
-      40
+      38
     ],
     "hub": [
       39
@@ -91,70 +91,70 @@
       38
     ],
     "api": [
-      38
+      39
     ],
     "system": [
       37
     ],
     "building": [
-      36
+      38
     ],
     "google": [
-      33
+      37
     ],
     "large": [
-      32
+      33
     ],
     "com": [
-      31
+      29
     ],
     "deep": [
-      31
+      33
     ],
     "faster": [
       30
     ],
     "world": [
-      30
+      31
     ],
     "mcp": [
       30
     ],
     "enterprise": [
-      29
+      30
     ],
     "partnership": [
-      28
+      27
     ],
     "card": [
-      28
+      27
     ],
     "coding": [
-      28
+      35
     ],
     "security": [
-      28
+      30
     ],
     "anthropic": [
-      28
+      27
     ],
     "system card": [
-      27
+      26
     ],
     "into": [
-      27
+      25
     ],
     "nvidia": [
       27
     ],
     "cursor": [
-      27
+      31
     ],
     "leaderboard": [
       27
     ],
     "msn": [
-      27
+      31
     ],
     "accelerating": [
       26
@@ -163,19 +163,19 @@
       26
     ],
     "machine": [
-      26
+      27
     ],
     "text": [
-      26
+      25
     ],
     "claude code": [
       26
     ],
     "work": [
-      25
+      27
     ],
     "frontier": [
-      25
+      26
     ],
     "accelerate": [
       25
@@ -190,13 +190,13 @@
       23
     ],
     "vision": [
-      23
+      25
     ],
     "china": [
-      23
+      26
     ],
     "reasoning": [
-      22
+      21
     ],
     "fine-tuning": [
       22
@@ -208,22 +208,22 @@
       22
     ],
     "github": [
-      22
+      26
     ],
     "microsoft": [
-      21
+      19
     ],
     "uses": [
-      21
+      23
     ],
     "better": [
-      21
+      20
     ],
     "agentic": [
-      21
+      22
     ],
     "future": [
-      21
+      23
     ],
     "datasets": [
       21
@@ -232,10 +232,10 @@
       20
     ],
     "image": [
-      20
+      19
     ],
     "opus": [
-      20
+      21
     ],
     "request": [
       19
@@ -244,10 +244,10 @@
       19
     ],
     "open-source": [
-      19
+      18
     ],
     "support": [
-      19
+      20
     ],
     "amazon": [
       19
@@ -256,16 +256,16 @@
       19
     ],
     "database": [
-      19
+      20
     ],
     "large language": [
-      19
+      20
     ],
     "gradio": [
       19
     ],
     "after": [
-      19
+      18
     ],
     "pull": [
       18
@@ -301,16 +301,16 @@
       18
     ],
     "science": [
-      18
+      19
     ],
     "business": [
-      18
+      19
     ],
     "language model": [
-      18
+      20
     ],
     "train": [
-      18
+      17
     ],
     "stable diffusion": [
       18
@@ -319,7 +319,7 @@
       18
     ],
     "huawei": [
-      18
+      16
     ],
     "merge": [
       17
@@ -337,7 +337,7 @@
       17
     ],
     "pro": [
-      17
+      16
     ],
     "embedding": [
       17
@@ -346,7 +346,7 @@
       17
     ],
     "gemma": [
-      17
+      16
     ],
     "face hub": [
       17
@@ -361,10 +361,10 @@
       16
     ],
     "intelligence": [
-      16
+      19
     ],
     "available": [
-      16
+      15
     ],
     "company": [
       16
@@ -376,19 +376,19 @@
       16
     ],
     "video": [
-      16
+      17
     ],
     "evaluating": [
       16
     ],
     "global": [
-      16
+      17
     ],
     "benchmark": [
       16
     ],
     "time": [
-      16
+      17
     ],
     "managed agents": [
       15
@@ -403,7 +403,7 @@
       15
     ],
     "scale": [
-      15
+      16
     ],
     "gpt-4": [
       15
@@ -412,7 +412,7 @@
       15
     ],
     "here": [
-      15
+      14
     ],
     "generative": [
       15
@@ -424,16 +424,16 @@
       15
     ],
     "copilot": [
-      15
+      16
     ],
     "multimodal": [
-      15
+      14
     ],
     "pytorch": [
       15
     ],
     "coding agent": [
-      15
+      16
     ],
     "part": [
       15
@@ -448,7 +448,7 @@
       14
     ],
     "developer": [
-      14
+      16
     ],
     "sora": [
       14
@@ -457,19 +457,19 @@
       14
     ],
     "bringing": [
-      14
+      15
     ],
     "analysis": [
-      14
+      16
     ],
     "development": [
-      14
+      16
     ],
     "performance": [
       14
     ],
     "evaluation": [
-      14
+      15
     ],
     "reinforcement learning": [
       14
@@ -478,19 +478,19 @@
       14
     ],
     "claude opus": [
-      14
+      16
     ],
     "access": [
-      13
+      15
     ],
     "approach": [
-      13
+      14
     ],
     "app": [
-      13
+      14
     ],
     "content": [
-      13
+      12
     ],
     "musk": [
       13
@@ -499,13 +499,13 @@
       13
     ],
     "production": [
-      13
+      14
     ],
     "fine-tune": [
       13
     ],
     "seconds": [
-      13
+      15
     ],
     "startup": [
       13
@@ -520,37 +520,37 @@
       12
     ],
     "tool": [
-      12
+      11
     ],
     "gpt-4o": [
       12
     ],
     "team": [
-      12
+      13
     ],
     "amd": [
       12
     ],
     "agi": [
-      12
+      11
     ],
     "guide": [
-      12
+      14
     ],
     "human": [
-      12
+      13
     ],
     "dall": [
       12
     ],
     "gpu": [
-      12
+      14
     ],
     "game": [
-      12
+      13
     ],
     "chinese": [
-      12
+      14
     ],
     "optimum": [
       12
@@ -562,10 +562,10 @@
       11
     ],
     "customer": [
-      11
+      12
     ],
     "developers": [
-      11
+      14
     ],
     "insights": [
       11
@@ -577,7 +577,7 @@
       11
     ],
     "news": [
-      11
+      12
     ],
     "five": [
       11
@@ -589,7 +589,7 @@
       11
     ],
     "systems": [
-      11
+      14
     ],
     "apps": [
       11
@@ -601,6 +601,48 @@
       11
     ],
     "audio": [
+      11
+    ],
+    "big": [
+      13
+    ],
+    "server": [
+      13
+    ],
+    "other": [
+      12
+    ],
+    "face inference": [
+      12
+    ],
+    "mcp server": [
+      12
+    ],
+    "tech": [
+      12
+    ],
+    "memory": [
+      11
+    ],
+    "ecosystem": [
+      11
+    ],
+    "projects": [
+      11
+    ],
+    "every": [
+      11
+    ],
+    "prompt": [
+      11
+    ],
+    "cline": [
+      12
+    ],
+    "engineering": [
+      11
+    ],
+    "gpt": [
       11
     ]
   }
