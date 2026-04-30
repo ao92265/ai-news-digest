@@ -34,9 +34,8 @@ export const sources: Source[] = [
   { name: 'Medium: Towards AI', kind: 'rss', url: 'https://medium.com/feed/towards-artificial-intelligence', category: 'blog', weight: 1.3 },
   { name: 'Medium: The Generator', kind: 'rss', url: 'https://medium.com/feed/the-generator', category: 'blog', weight: 1.3 },
 
-  // Joe Njenga (AI tools creator — was on Instagram request)
-  { name: 'Joe Njenga (Substack)', kind: 'rss', url: 'https://joenjenga.substack.com/feed', category: 'blog', weight: 1.2 },
-  { name: 'Joe Njenga (Medium)', kind: 'rss', url: 'https://medium.com/feed/@joe.njenga', category: 'blog', weight: 1.0 },
+  // Joe Njenga (AI tools creator). Substack feed dead (302 → profile, account moved or stopped publishing).
+  { name: 'Joe Njenga (Medium)', kind: 'rss', url: 'https://medium.com/feed/@joe.njenga', category: 'blog', weight: 1.2 },
 
   // Community — Reddit disabled: 403 from datacenter IPs (GitHub Actions) and
   // public RSSHub instances. Re-enable when OAuth credentials available.
