@@ -2,7 +2,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Source } from './sources.js';
 import type { Item } from './types.js';
-import type { Cluster } from './cluster.js';
 
 const STATS_PATH = path.resolve('./data/source-stats.json');
 const TRENDS_PATH = path.resolve('./data/topic-trends.json');
@@ -50,33 +49,6 @@ export async function applySourceTuning(sources: Source[]): Promise<Source[]> {
     console.log(`  tuning ${src.name}: ${src.weight.toFixed(2)} → ${tuned.weight.toFixed(2)} (skip rate ${(skipRate * 100).toFixed(0)}%)`);
     return tuned;
   });
-}
-
-export async function recordRun(summarized: Cluster[]): Promise<void> {
-  const stats = await readJsonSafe<SourceStats>(STATS_PATH, {});
-  const today = new Date().toISOString().slice(0, 10);
-  for (const c of summarized) {
-    const src = c.primary.source;
-    const skipped = /^skip\b/i.test((c.primary.llmWhy || '').trim());
-    if (!stats[src]) stats[src] = { kept: 0, skipped: 0, updatedAt: today };
-    if (skipped) stats[src].skipped += 1;
-    else stats[src].kept += 1;
-    stats[src].updatedAt = today;
-  }
-  // Decay: every entry loses 1/ROLLING_DAYS of its mass per day since update.
-  // Simple approximation — keeps stats responsive without per-day buckets.
-  const todayMs = Date.parse(today);
-  for (const [name, s] of Object.entries(stats)) {
-    const daysOld = Math.max(0, (todayMs - Date.parse(s.updatedAt)) / 86400000);
-    if (daysOld > ROLLING_DAYS) {
-      delete stats[name];
-      continue;
-    }
-    const decay = Math.max(0, 1 - daysOld / ROLLING_DAYS);
-    s.kept = Math.round(s.kept * decay * 100) / 100;
-    s.skipped = Math.round(s.skipped * decay * 100) / 100;
-  }
-  await writeJson(STATS_PATH, stats);
 }
 
 function tokenize(text: string): string[] {

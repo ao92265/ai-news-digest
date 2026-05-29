@@ -7,12 +7,10 @@ import { fetchGithubTrending } from './fetchers/github.js';
 import { fetchReddit } from './fetchers/reddit.js';
 import { loadSeen, saveSeen } from './dedupe.js';
 import { cluster } from './cluster.js';
-import { summarizeAll } from './summarize.js';
-import { buildTldr } from './tldr.js';
 import { render } from './render.js';
 import { sendDigest } from './send.js';
 import { writeSite } from './site.js';
-import { applySourceTuning, recordRun, updateTrends, getTrendingTopics, trendingBoost, crossCategoryBoost } from './learn.js';
+import { applySourceTuning, updateTrends, getTrendingTopics, trendingBoost, crossCategoryBoost } from './learn.js';
 import type { Item } from './types.js';
 
 const args = process.argv.slice(2);
@@ -93,29 +91,8 @@ async function main(): Promise<void> {
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     .slice(0, Math.min(clusters.length, maxItems * 2));
 
-  const hasKey = !!process.env.ANTHROPIC_API_KEY;
-  if (!hasKey) console.warn('ANTHROPIC_API_KEY not set — skipping LLM summaries + TL;DR');
-  const summarized = hasKey ? await summarizeAll(preRanked) : preRanked;
-
-  // Drop items the LLM flagged as not adopt-worthy ("Skip ..." in why_it_matters).
-  // Without a key we can't judge adopt-worthiness, so keep everything.
-  const adoptWorthy = hasKey
-    ? summarized.filter(c => !/^skip\b/i.test((c.primary.llmWhy || '').trim()))
-    : summarized;
-  // Flag survivors so the site renderer can style them with the Adopt badge.
-  for (const c of adoptWorthy) c.primary.adopt = true;
-  console.log(`Adopt-worthy: ${adoptWorthy.length}/${summarized.length}`);
-
-  // Record per-source kept/skipped to drive auto-tuning on next run.
-  if (hasKey) await recordRun(summarized);
-
-  // Post-summary merge: group by canonical company/product key so 7x DeepSeek
-  // stories collapse to one. Skip filter above already dropped non-adopt noise,
-  // so merging all "DeepSeek" items is safe — what remains is the single
-  // adopt-worthy release thread.
-  // Collapse aggressively by company/product family. The Skip filter above has
-  // already dropped non-adopt noise, so any remaining DeepSeek/OpenAI story is
-  // legitimately worth one representative mention.
+  // Collapse aggressively by company/product family so duplicate releases
+  // across outlets become one entry.
   const KEY_RX: Array<[RegExp, string]> = [
     [/\bclaude code\b/i, 'claudecode'],
     [/\b(mcp|model context protocol)\b/i, 'mcp'],
@@ -138,18 +115,12 @@ async function main(): Promise<void> {
     for (const [rx, key] of KEY_RX) if (rx.test(text)) return key;
     return null;
   }
-  function modelKey(c: typeof summarized[number]): string | null {
-    // Key on headline first — headline names the subject. Fall back to title
-    // then summary. Avoids mis-keying DeepSeek stories that mention Claude
-    // competitively in the summary.
-    const head = c.primary.llmHeadline || '';
-    const title = c.primary.title || '';
-    const summary = c.primary.llmSummary || '';
-    return matchKey(head) ?? matchKey(title) ?? matchKey(summary);
+  function modelKey(c: typeof preRanked[number]): string | null {
+    return matchKey(c.primary.title || '') ?? matchKey(c.primary.summary || '');
   }
-  const byKey = new Map<string, typeof adoptWorthy>();
-  const unkeyed: typeof adoptWorthy = [];
-  for (const c of adoptWorthy) {
+  const byKey = new Map<string, typeof preRanked>();
+  const unkeyed: typeof preRanked = [];
+  for (const c of preRanked) {
     const k = modelKey(c);
     if (k) {
       if (!byKey.has(k)) byKey.set(k, []);
@@ -193,19 +164,17 @@ async function main(): Promise<void> {
     if (final.length >= maxItems) break;
     final.push(c);
   }
-  console.log(`Merged duplicates: ${adoptWorthy.length} -> ${merged.length}; final: ${final.length}`);
-  const tldr = hasKey ? await buildTldr(final).catch(err => { console.error('tldr error:', err?.message); return null; }) : null;
-
-  const { html, text, subject } = render(final, tldr);
+  console.log(`Merged duplicates: ${preRanked.length} -> ${merged.length}; final: ${final.length}`);
+  const { html, text, subject } = render(final);
 
   // Always write the static site (powers GitHub Pages)
-  await writeSite(final, tldr);
+  await writeSite(final);
 
   if (dryRun) {
     await fs.mkdir('./out', { recursive: true });
     await fs.writeFile('./out/digest.html', html);
     await fs.writeFile('./out/digest.txt', text);
-    await fs.writeFile('./out/debug.json', JSON.stringify({ tldr, clusters: final }, null, 2));
+    await fs.writeFile('./out/debug.json', JSON.stringify({ clusters: final }, null, 2));
     console.log(`\nDry-run output: ./out/digest.html (${final.length} stories)`);
     console.log(`Subject would be: "${subject}"`);
   } else {

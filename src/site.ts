@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Cluster } from './cluster.js';
-import type { Tldr } from './tldr.js';
 
 const SITE_DIR = './site';
 const DIGESTS_DIR = './site/digests';
@@ -105,17 +104,8 @@ function statusStripHtml(generatedAtIso: string, sourceCount: number, itemCount:
   </div>`;
 }
 
-function tldrHtml(bullets: string[]): string {
-  if (!bullets.length) return '';
-  return `<div class="tldr">
-    <div class="tldr-head">TL;DR <span class="count">· ${bullets.length} bullets</span></div>
-    <ul>${bullets.map(b => `<li><span>${esc(b)}</span></li>`).join('')}</ul>
-  </div>`;
-}
-
 function digestBodyHtml(
   clusters: Cluster[],
-  tldr: Tldr | null,
   date: string,
   generatedAt: string,
   sourceCount: number,
@@ -129,21 +119,18 @@ function digestBodyHtml(
   }
 
   const allSources = uniq(clusters.flatMap(c => c.items.map(i => i.source))).sort();
-  const adoptCount = clusters.filter(c => isAdopt(c)).length;
 
   const sectionsHtml = SECTION_ORDER
     .filter(k => bySection.has(k))
     .map(k => {
       const items = bySection.get(k)!
         .map(c => {
-          const headline = c.primary.llmHeadline || c.primary.title;
-          const summary = (c.primary.llmSummary || c.primary.summary || '').trim();
+          const headline = c.primary.title;
+          const summary = (c.primary.summary || '').trim();
           const sources = uniq(c.items.map(i => i.source));
-          const adopt = isAdopt(c);
           const id = c.primary.id || encodeURIComponent(c.primary.url);
-          return `<li class="item ${adopt ? 'adopt' : ''}" data-id="${esc(id)}" data-sources="${esc(sources.join('|'))}">
+          return `<li class="item" data-id="${esc(id)}" data-sources="${esc(sources.join('|'))}">
             <div class="item-head">
-              ${adopt ? '<span class="badge">Adopt</span>' : ''}
               ${c.primary.trending ? '<span class="badge trending">Trending</span>' : ''}
               <span class="item-title"><a href="${esc(c.primary.url)}" target="_blank" rel="noopener">${esc(headline)}</a></span>
             </div>
@@ -158,7 +145,6 @@ function digestBodyHtml(
                 <dt>Link</dt><dd><a href="${esc(c.primary.url)}" target="_blank" rel="noopener">${esc(c.primary.url)} ↗</a></dd>
                 <dt>Sources</dt><dd>${esc(sources.join(' · '))}</dd>
                 <dt>Section</dt><dd>${esc(SECTION_LABELS[k] || k)}</dd>
-                ${adopt ? '<dt>Flag</dt><dd style="color:var(--accent);font-weight:600">Adopt-worthy</dd>' : ''}
               </dl>
             </div>
           </li>`;
@@ -197,8 +183,7 @@ function digestBodyHtml(
     ${crumb}
     ${statusStripHtml(generatedAt, sourceCount, clusters.length)}
     <h1 class="page-title">${esc(dateShort)}<span class="slash">/</span><span class="year">${esc(year)}</span></h1>
-    <p class="page-meta"><b>${adoptCount}</b> adopt-worthy · <b>${clusters.length}</b> total · curated for Claude Code users</p>
-    ${tldr && tldr.bullets.length ? tldrHtml(tldr.bullets) : ''}
+    <p class="page-meta"><b>${clusters.length}</b> stories · curated for Claude Code users</p>
     <div class="controls">
       ${chips}
       <div class="actions">
@@ -214,16 +199,6 @@ function digestBodyHtml(
     ${sectionsHtml}
     ${ctaHtml}
   </div>`;
-}
-
-function isAdopt(c: Cluster): boolean {
-  // Either an explicit adopt flag or the inverse of the LLM's "Skip" marker.
-  // Adopt-worthy items survived the filter in index.ts; "Skip" items were dropped.
-  // If adopt is explicitly set, prefer that.
-  if (typeof c.primary.adopt === 'boolean') return c.primary.adopt;
-  const why = (c.primary.llmWhy || '').trim();
-  if (/^skip\b/i.test(why)) return false;
-  return !!c.primary.llmWhy; // LLM wrote a real why → adopt-worthy
 }
 
 function archiveBodyHtml(entries: ArchiveEntry[]): string {
@@ -267,11 +242,10 @@ const ABOUT_BODY = `<h1 class="page-title">About</h1>
 <section class="digest-section">
   <h2 class="section"><span class="name">How it works</span><span class="rule"></span></h2>
   <ol class="howitworks">
-    <li><span><b>07:00 UTC</b> — a GitHub Action kicks off the daily build.</span></li>
     <li><span><b>Fetch</b> ~24 sources across releases, Hacker News, blogs, newsletters, research, and video.</span></li>
-    <li><span><b>Summarize</b> — Claude Haiku writes a one-line summary for each story, flags adopt-worthy items, and drafts the TL;DR.</span></li>
+    <li><span><b>Rank</b> — recency, trending topics, and cross-category corroboration score each story.</span></li>
     <li><span><b>Merge</b> — duplicates across outlets collapse into a single entry with combined sources.</span></li>
-    <li><span><b>Publish</b> — static site rebuilds and deploys to GitHub Pages. Email goes out to the list.</span></li>
+    <li><span><b>Publish</b> — static site rebuilds. Email goes out to the list.</span></li>
   </ol>
 </section>
 <section class="digest-section">
@@ -306,7 +280,7 @@ async function saveArchive(entries: ArchiveEntry[]): Promise<void> {
   await fs.writeFile(INDEX_JSON, JSON.stringify(entries, null, 2) + '\n');
 }
 
-export async function writeSite(clusters: Cluster[], tldr: Tldr | null): Promise<void> {
+export async function writeSite(clusters: Cluster[]): Promise<void> {
   const date = new Date().toISOString().slice(0, 10);
   const generatedAt = new Date().toISOString();
   const sourceCount = uniq(clusters.flatMap(c => c.items.map(i => i.source))).length;
@@ -314,8 +288,8 @@ export async function writeSite(clusters: Cluster[], tldr: Tldr | null): Promise
 
   await fs.mkdir(DIGESTS_DIR, { recursive: true });
 
-  const todayBody = digestBodyHtml(clusters, tldr, date, generatedAt, sourceCount, true);
-  const dateBody = digestBodyHtml(clusters, tldr, date, generatedAt, sourceCount, false);
+  const todayBody = digestBodyHtml(clusters, date, generatedAt, sourceCount, true);
+  const dateBody = digestBodyHtml(clusters, date, generatedAt, sourceCount, false);
 
   await fs.writeFile(
     path.join(SITE_DIR, 'index.html'),

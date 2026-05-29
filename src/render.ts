@@ -1,6 +1,5 @@
 import type { Cluster } from './cluster.js';
 import type { Category } from './types.js';
-import type { Tldr } from './tldr.js';
 
 /*
  * Email renderer — matches the Card Stack website visual language while staying
@@ -39,37 +38,10 @@ function uniq<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
 }
 
-function isAdopt(c: Cluster): boolean {
-  if (typeof c.primary.adopt === 'boolean') return c.primary.adopt;
-  const why = (c.primary.llmWhy || '').trim();
-  if (/^skip\b/i.test(why)) return false;
-  return !!c.primary.llmWhy;
-}
-
-function tldrHtml(bullets: string[]): string {
-  if (!bullets.length) return '';
-  const items = bullets.map(b => `
-    <tr><td style="padding:0 0 8px 0;vertical-align:top;width:18px;color:${C.accent};font-weight:700;font-size:13.5px;line-height:1.5">→</td>
-    <td style="padding:0 0 8px 0;vertical-align:top;font-size:13.5px;line-height:1.5;color:${C.ink}">${esc(b)}</td></tr>`).join('');
-  return `
-  <div style="background:${C.card};border:1px solid ${C.rule};border-radius:10px;padding:18px 20px 14px 20px;margin:0 0 28px 0;position:relative;border-left:3px solid ${C.accent}">
-    <div style="font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:${C.accent};font-weight:700;margin-bottom:12px">TL;DR <span style="color:${C.muted};font-weight:500;letter-spacing:0.08em">· ${bullets.length} bullets</span></div>
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse:collapse">${items}</table>
-  </div>`;
-}
-
 function itemHtml(c: Cluster, sectionLabel: string): string {
-  const headline = c.primary.llmHeadline || c.primary.title;
-  const summary = (c.primary.llmSummary || c.primary.summary || '').trim();
+  const headline = c.primary.title;
+  const summary = (c.primary.summary || '').trim();
   const sources = uniq(c.items.map(i => i.source));
-  const adopt = isAdopt(c);
-  const borderColour = adopt ? `color-mix(in srgb, ${C.accent} 45%, ${C.rule})` : C.rule;
-  const accentBar = adopt
-    ? `<div style="position:absolute;left:0;top:14px;bottom:14px;width:3px;background:${C.accent};border-radius:0 3px 3px 0"></div>`
-    : '';
-  const badge = adopt
-    ? `<span style="display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:0.1em;padding:2px 7px;border-radius:3px;background:${C.accent};color:#ffffff;text-transform:uppercase;margin-right:8px;vertical-align:middle">Adopt</span>`
-    : '';
   const trendBadge = c.primary.trending
     ? `<span style="display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:0.1em;padding:2px 7px;border-radius:3px;background:${C.ink};color:#ffffff;text-transform:uppercase;margin-right:8px;vertical-align:middle">Trending</span>`
     : '';
@@ -79,10 +51,9 @@ function itemHtml(c: Cluster, sectionLabel: string): string {
 
   return `
   <tr><td style="padding:0 0 8px 0">
-    <div style="background:${C.card};border:1px solid ${borderColour};border-radius:8px;padding:14px 16px;position:relative">
-      ${accentBar}
+    <div style="background:${C.card};border:1px solid ${C.rule};border-radius:8px;padding:14px 16px;position:relative">
       <div style="margin-bottom:6px">
-        ${badge}${trendBadge}<a href="${esc(c.primary.url)}" style="color:${C.ink};text-decoration:none;font-weight:600;font-size:14.5px;line-height:1.35;letter-spacing:-0.005em">${esc(headline)}</a>
+        ${trendBadge}<a href="${esc(c.primary.url)}" style="color:${C.ink};text-decoration:none;font-weight:600;font-size:14.5px;line-height:1.35;letter-spacing:-0.005em">${esc(headline)}</a>
       </div>
       ${summary ? `<div style="font-size:12.5px;color:${C.muted};line-height:1.5;margin-top:4px">${esc(summary)}</div>` : ''}
       <div style="margin-top:10px;font-size:10.5px;color:${C.muted}">${sourceChips}</div>
@@ -108,11 +79,10 @@ function sectionHtml(label: string, clusters: Cluster[]): string {
   </div>`;
 }
 
-export function render(clusters: Cluster[], tldr: Tldr | null): { html: string; text: string; subject: string } {
+export function render(clusters: Cluster[]): { html: string; text: string; subject: string } {
   const date = new Date().toISOString().slice(0, 10);
   const dateShort = new Date(date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   const year = date.slice(0, 4);
-  const adoptCount = clusters.filter(isAdopt).length;
 
   const bySection = new Map<Category, Cluster[]>();
   for (const c of clusters) {
@@ -153,9 +123,8 @@ export function render(clusters: Cluster[], tldr: Tldr | null): { html: string; 
           ${esc(dateShort)}<span style="color:${C.accent};margin:0 2px">/</span><span style="color:${C.muted};font-weight:500">${esc(year)}</span>
         </div>
         <div style="font-family:${FONT};font-size:13px;color:${C.muted};margin:6px 0 20px 0">
-          <b style="color:${C.ink};font-weight:600">${adoptCount}</b> adopt-worthy · <b style="color:${C.ink};font-weight:600">${total}</b> total · curated for Claude Code users
+          <b style="color:${C.ink};font-weight:600">${total}</b> stories · curated for Claude Code users
         </div>
-        ${tldr && tldr.bullets.length ? tldrHtml(tldr.bullets) : ''}
         ${sectionsHtml}
         <div style="background:${C.card};border:1px solid ${C.rule};border-radius:10px;padding:20px 22px;margin:40px 0 0 0">
           <div style="font-family:${FONT};font-size:14.5px;font-weight:600;letter-spacing:-0.005em;color:${C.ink};margin-bottom:6px">Read on the web</div>
@@ -173,24 +142,20 @@ export function render(clusters: Cluster[], tldr: Tldr | null): { html: string; 
 </body>
 </html>`;
 
-  const tldrText = tldr && tldr.bullets.length
-    ? `TL;DR\n${tldr.bullets.map(b => `  → ${b}`).join('\n')}\n\n`
-    : '';
-  const text = `AI Digest — ${dateShort}/${year}\n${adoptCount} adopt-worthy · ${total} total\n\n` + tldrText + SECTION_ORDER
+  const text = `AI Digest — ${dateShort}/${year}\n${total} stories\n\n` + SECTION_ORDER
     .filter(k => bySection.has(k))
     .map(k => {
       const body = bySection.get(k)!
         .map(c => {
-          const h = c.primary.llmHeadline || c.primary.title;
-          const s = (c.primary.llmSummary || c.primary.summary || '').trim();
-          const tag = isAdopt(c) ? '[ADOPT] ' : '';
-          return `- ${tag}${h}${s ? ' — ' + s : ''}\n  ${c.primary.url}`;
+          const h = c.primary.title;
+          const s = (c.primary.summary || '').trim();
+          return `- ${h}${s ? ' — ' + s : ''}\n  ${c.primary.url}`;
         })
         .join('\n');
       return `## ${SECTION_LABELS[k]}\n${body}`;
     })
     .join('\n\n') + `\n\nRead on the web: https://ao92265.github.io/ai-news-digest/`;
 
-  const subject = `AI Digest ${dateShort} — ${adoptCount} adopt-worthy`;
+  const subject = `AI Digest ${dateShort} — ${total} stories`;
   return { html, text, subject };
 }

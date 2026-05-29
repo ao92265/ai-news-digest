@@ -9,10 +9,6 @@ export type Item = {
   publishedAt: string;
   summary?: string;
   weight: number;
-  llmHeadline?: string;
-  llmSummary?: string;
-  llmWhy?: string;
   score?: number;
-  adopt?: boolean;
   trending?: boolean;
 };
