@@ -8,6 +8,28 @@ RSS (TechCrunch, Verge, Ars, MIT Tech Review, Medium, YouTube) + arXiv cs.AI + H
 
 Edit `src/sources.ts` to add/remove feeds or retune weights.
 
+### Research Inbox (your Outlook "research" folder)
+
+The `local-folder` source reads exported emails from `~/Desktop/ai-research-inbox`
+and folds them into the digest, **de-paywalling the article each newsletter links
+to** (free `r.jina.ai` reader, `archive.ph` fallback). No IMAP, no Microsoft Graph,
+no admin consent — just `.eml`/`.txt`/`.html` files on disk. Tracking, unsubscribe,
+and asset links are filtered out; the first real article link is fetched in full.
+
+Getting your research-folder mail into that folder:
+
+- **Manual drag (reliable, works on new Outlook 16):** select messages in the
+  research folder and drag them to `~/Desktop/ai-research-inbox` in Finder — macOS
+  Outlook writes each as a `.eml`.
+- **Hands-off:** the *new* Outlook for Mac can't save-to-disk from a rule and has no
+  usable AppleScript, so true automation would need the IMAP or Graph path this
+  pipeline deliberately avoids. If you want it later, add an IMAP fetcher (himalaya
+  or `imapflow`) alongside this source.
+
+The source is a no-op until the folder has files, so it's safe to leave enabled.
+Tune the `Research Inbox` entry in `src/sources.ts`: `degate: false` skips article
+extraction; change `dir`/`weight` as needed.
+
 ## Pipeline
 
 `fetch → dedupe (30-day URL store) → cluster (title Jaccard ≥ 0.45) → rank (source weight × recency × source-count) → top 25 → Claude Haiku summarize → render HTML → Resend`.

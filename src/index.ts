@@ -5,6 +5,7 @@ import { fetchHn } from './fetchers/hn.js';
 import { fetchArxiv } from './fetchers/arxiv.js';
 import { fetchGithubTrending } from './fetchers/github.js';
 import { fetchReddit } from './fetchers/reddit.js';
+import { fetchLocalFolder } from './fetchers/local-folder.js';
 import { loadSeen, saveSeen } from './dedupe.js';
 import { cluster } from './cluster.js';
 import { render } from './render.js';
@@ -33,6 +34,7 @@ async function fetchAll(sources: typeof rawSources): Promise<Item[]> {
       case 'arxiv': return fetchArxiv(src.weight);
       case 'github-trending': return fetchGithubTrending(src.topics, src.weight);
       case 'reddit': return fetchReddit(src.subs, src.minScore, src.weight);
+      case 'local-folder': return fetchLocalFolder(src.name, src.dir, src.category, src.weight, { degate: src.degate });
     }
   });
   const results = await Promise.allSettled(jobs);

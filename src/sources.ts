@@ -5,11 +5,17 @@ export type Source =
   | { name: string; kind: 'hn'; category: Category; weight: number }
   | { name: string; kind: 'arxiv'; category: Category; weight: number }
   | { name: string; kind: 'github-trending'; topics: string[]; category: Category; weight: number }
-  | { name: string; kind: 'reddit'; subs: string[]; minScore: number; category: Category; weight: number };
+  | { name: string; kind: 'reddit'; subs: string[]; minScore: number; category: Category; weight: number }
+  | { name: string; kind: 'local-folder'; dir: string; degate?: boolean; category: Category; weight: number };
 
 // Weights: 1.0 = baseline. >1 = dev/Claude Code signal (prioritize).
 // Dropped: broad Google News AI query, Medium tags (low signal, SEO spam, market noise).
 export const sources: Source[] = [
+  // Local research inbox — export your Outlook "research" folder here as .eml
+  // (drag messages to this folder in Finder). De-paywalls the linked articles
+  // via r.jina.ai. No-op if the folder doesn't exist yet.
+  { name: 'Research Inbox', kind: 'local-folder', dir: '~/Desktop/ai-research-inbox', degate: true, category: 'research', weight: 1.5 },
+
   // Claude / Anthropic — top priority
   { name: 'Claude Code Releases', kind: 'rss', url: 'https://github.com/anthropics/claude-code/releases.atom', category: 'code', weight: 2.0 },
   { name: 'Anthropic Cookbook', kind: 'rss', url: 'https://github.com/anthropics/anthropic-cookbook/commits/main.atom', category: 'code', weight: 1.3 },
