@@ -7,7 +7,7 @@ import { fetchGithubTrending } from './fetchers/github.js';
 import { fetchReddit } from './fetchers/reddit.js';
 import { fetchLocalFolder } from './fetchers/local-folder.js';
 import { loadSeen, saveSeen } from './dedupe.js';
-import { cluster } from './cluster.js';
+import { cluster, type Cluster } from './cluster.js';
 import { render } from './render.js';
 import { sendDigest } from './send.js';
 import { writeSite } from './site.js';
@@ -74,8 +74,13 @@ async function main(): Promise<void> {
   const fresh = all.filter(i => !seen.has(i.id) && isRecent(i.publishedAt));
   console.log(`Fresh in last ${recencyHours}h: ${fresh.length}`);
 
-  const clusters = cluster(fresh);
-  console.log(`Clusters: ${clusters.length}`);
+  // Research Inbox holds distinct saved articles, not many outlets covering one
+  // story — keep each as its own item (no title-clustering collapse) so every
+  // saved email survives into the digest.
+  const isResearch = (i: Item) => i.source === 'Research Inbox';
+  const researchSingletons: Cluster[] = fresh.filter(isResearch).map(i => ({ primary: i, items: [i] }));
+  const clusters = [...cluster(fresh.filter(i => !isResearch(i))), ...researchSingletons];
+  console.log(`Clusters: ${clusters.length} (${researchSingletons.length} research, kept distinct)`);
 
   // Score = source weight × recency × source-count cap × trending-topic boost × cross-category boost.
   // Cap source-count at 2 so single-source Claude Code releases can beat multi-outlet market stories.
@@ -123,7 +128,9 @@ async function main(): Promise<void> {
   const byKey = new Map<string, typeof preRanked>();
   const unkeyed: typeof preRanked = [];
   for (const c of preRanked) {
-    const k = modelKey(c);
+    // Research Inbox holds DISTINCT saved articles, not many outlets covering one
+    // event — exempt it from company-family merging so each article survives.
+    const k = c.primary.source === 'Research Inbox' ? null : modelKey(c);
     if (k) {
       if (!byKey.has(k)) byKey.set(k, []);
       byKey.get(k)!.push(c);
@@ -153,7 +160,9 @@ async function main(): Promise<void> {
   for (const c of ranked) {
     const src = c.primary.source;
     const used = perSource.get(src) ?? 0;
-    if (used < PER_SOURCE_CAP) {
+    // Research Inbox is a single source but holds many distinct articles you
+    // saved on purpose — don't cap it like a flooding feed.
+    if (src === 'Research Inbox' || used < PER_SOURCE_CAP) {
       final.push(c);
       perSource.set(src, used + 1);
     } else {
@@ -165,6 +174,15 @@ async function main(): Promise<void> {
   for (const c of overflow) {
     if (final.length >= maxItems) break;
     final.push(c);
+  }
+  // Never truncate the research inbox — append any saved articles the maxItems
+  // cap left out, so the folder is represented in full ("show me all of them").
+  const inFinal = new Set(final.map(c => c.primary.id));
+  for (const c of ranked) {
+    if (c.primary.source === 'Research Inbox' && !inFinal.has(c.primary.id)) {
+      final.push(c);
+      inFinal.add(c.primary.id);
+    }
   }
   console.log(`Merged duplicates: ${preRanked.length} -> ${merged.length}; final: ${final.length}`);
   const { html, text, subject } = render(final);
