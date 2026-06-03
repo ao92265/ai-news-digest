@@ -38,9 +38,56 @@ function uniq<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
 }
 
+// Scraped excerpts often end mid-word ("...each tool returns i"). Trim to the
+// last sentence boundary inside the budget, else the last whole word, so the
+// summary reads as a finished thought instead of a cut-off scrape.
+function cleanSummary(raw: string, max = 240): string {
+  const t = (raw || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const slice = t.slice(0, max);
+  const sent = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('! '), slice.lastIndexOf('? '));
+  if (sent > max * 0.5) return slice.slice(0, sent + 1);
+  const sp = slice.lastIndexOf(' ');
+  return (sp > 0 ? slice.slice(0, sp) : slice).replace(/[,;:.\-\s]+$/, '') + '…';
+}
+
+function titleCaseTopic(t: string): string {
+  return t.replace(/\b\w/g, m => m.toUpperCase());
+}
+
+// Heuristic TL;DR — no LLM. Built from data we already have: the top-ranked
+// clusters (the array arrives in rank order), surging trend topics, and the
+// per-section counts. A scannable "what matters today" without a model call.
+function tldrHtml(clusters: Cluster[], trending: Set<string>, bySection: Map<Category, Cluster[]>): string {
+  const top = clusters.filter(c => c.primary.source !== 'Research Inbox').slice(0, 5);
+  if (top.length === 0) return '';
+  const topItems = top.map(c => {
+    const src = uniq(c.items.map(i => i.source))[0] || c.primary.source;
+    return `<tr><td style="padding:3px 0;font-size:12.5px;line-height:1.45;color:${C.ink}">
+      <span style="color:${C.accent};font-weight:700;margin-right:7px">›</span><a href="${esc(c.primary.url)}" style="color:${C.ink};text-decoration:none;font-weight:600">${esc(c.primary.title)}</a>
+      <span style="color:${C.muted};font-weight:500"> · ${esc(src)}</span>
+    </td></tr>`;
+  }).join('');
+  const trend = Array.from(trending).slice(0, 5).map(titleCaseTopic);
+  const trendLine = trend.length
+    ? `<div style="font-size:11.5px;color:${C.muted};margin-top:12px;line-height:1.5">Trending: ${trend.map(t => `<span style="color:${C.ink};font-weight:600">${esc(t)}</span>`).join(' · ')}</div>`
+    : '';
+  const counts = SECTION_ORDER
+    .filter(k => bySection.has(k))
+    .map(k => `${esc(SECTION_LABELS[k])} <b style="color:${C.ink}">${bySection.get(k)!.length}</b>`)
+    .join('  ·  ');
+  return `
+  <div style="background:${C.card};border:1px solid ${C.rule};border-radius:10px;padding:18px 20px;margin:0 0 28px 0">
+    <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${C.accent};margin-bottom:10px">TL;DR — Top ${top.length}</div>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse:collapse">${topItems}</table>
+    ${trendLine}
+    <div style="font-size:11px;color:${C.muted};margin-top:10px;padding-top:10px;border-top:1px solid ${C.rule}">${counts}</div>
+  </div>`;
+}
+
 function itemHtml(c: Cluster, sectionLabel: string): string {
   const headline = c.primary.title;
-  const summary = (c.primary.summary || '').trim();
+  const summary = cleanSummary(c.primary.summary || '');
   const sources = uniq(c.items.map(i => i.source));
   const trendBadge = c.primary.trending
     ? `<span style="display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:0.1em;padding:2px 7px;border-radius:3px;background:${C.ink};color:#ffffff;text-transform:uppercase;margin-right:8px;vertical-align:middle">Trending</span>`
@@ -79,7 +126,7 @@ function sectionHtml(label: string, clusters: Cluster[]): string {
   </div>`;
 }
 
-export function render(clusters: Cluster[]): { html: string; text: string; subject: string } {
+export function render(clusters: Cluster[], trending: Set<string> = new Set()): { html: string; text: string; subject: string } {
   const date = new Date().toISOString().slice(0, 10);
   const dateShort = new Date(date + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   const year = date.slice(0, 4);
@@ -125,6 +172,7 @@ export function render(clusters: Cluster[]): { html: string; text: string; subje
         <div style="font-family:${FONT};font-size:13px;color:${C.muted};margin:6px 0 20px 0">
           <b style="color:${C.ink};font-weight:600">${total}</b> stories · curated for Claude Code users
         </div>
+        ${tldrHtml(clusters, trending, bySection)}
         ${sectionsHtml}
         <div style="background:${C.card};border:1px solid ${C.rule};border-radius:10px;padding:20px 22px;margin:40px 0 0 0">
           <div style="font-family:${FONT};font-size:14.5px;font-weight:600;letter-spacing:-0.005em;color:${C.ink};margin-bottom:6px">Read on the web</div>
@@ -142,13 +190,23 @@ export function render(clusters: Cluster[]): { html: string; text: string; subje
 </body>
 </html>`;
 
-  const text = `AI Digest — ${dateShort}/${year}\n${total} stories\n\n` + SECTION_ORDER
+  const tldrTop = clusters.filter(c => c.primary.source !== 'Research Inbox').slice(0, 5);
+  const tldrText = tldrTop.length
+    ? `TL;DR — Top ${tldrTop.length}\n` + tldrTop.map(c => {
+        const src = uniq(c.items.map(i => i.source))[0] || c.primary.source;
+        return `  > ${c.primary.title} · ${src}`;
+      }).join('\n')
+      + (trending.size ? `\nTrending: ${Array.from(trending).slice(0, 5).map(titleCaseTopic).join(' · ')}` : '')
+      + '\n\n'
+    : '';
+
+  const text = `AI Digest — ${dateShort}/${year}\n${total} stories\n\n` + tldrText + SECTION_ORDER
     .filter(k => bySection.has(k))
     .map(k => {
       const body = bySection.get(k)!
         .map(c => {
           const h = c.primary.title;
-          const s = (c.primary.summary || '').trim();
+          const s = cleanSummary(c.primary.summary || '');
           return `- ${h}${s ? ' — ' + s : ''}\n  ${c.primary.url}`;
         })
         .join('\n');

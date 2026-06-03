@@ -185,7 +185,7 @@ async function main(): Promise<void> {
     }
   }
   console.log(`Merged duplicates: ${preRanked.length} -> ${merged.length}; final: ${final.length}`);
-  const { html, text, subject } = render(final);
+  const { html, text, subject } = render(final, trending);
 
   // Always write the static site (powers GitHub Pages)
   await writeSite(final);
